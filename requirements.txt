@@ -1,0 +1,16 @@
+# Data Processing & Analytics
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Machine Learning & NLP
+scikit-learn>=1.2.0
+joblib>=1.2.0
+
+# Dataset Access & APIs
+kaggle>=1.5.12
+datasets>=2.14.0
+huggingface_hub>=0.16.0
+
+# Translation Libraries
+deep-translator>=1.11.0
+translate>=3.6.0
