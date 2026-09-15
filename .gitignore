@@ -1,0 +1,22 @@
+# Virtual Environment
+venv/
+env/
+
+# Python Cache & Bytecode
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
+
+# Raw and Processed Datasets (Keep data directory structure via gitkeep if needed)
+data/gujarati/*.csv
+data/tamil/*.csv
+data/processed/*.csv
+
+# Trained Model Binaries (Optional: exclude if >100MB)
+models/*.pkl
+
+# Environment variables / Credentials
+.env
