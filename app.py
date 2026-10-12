@@ -6,17 +6,16 @@ import numpy as np
 import streamlit as st
 from deep_translator import GoogleTranslator
 from translate import Translator as PyTranslate
-from transformers import pipeline
 
 # Append src path for preprocessing access
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "src")))
 from preprocess import clean_indic_text
 
 # -------------------------------------------------------------------------
-# PAGE CONFIGURATION & CUSTOM CSS STYLING
+# PAGE CONFIGURATION & EXECUTIVE MODERN CSS THEME
 # -------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Indic News Classifier",
+    page_title="Tamil News Classifier",
     page_icon="📰",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -24,211 +23,298 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    .main { background-color: #F8F9FA; }
-    .metric-card {
-        background-color: #FFFFFF;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        border: 1px solid #E9ECEF;
-        margin-bottom: 15px;
+    /* Global App Background */
+    .stApp {
+        background: #0B0F19;
+        color: #F1F5F9;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
+    
+    /* Header Typography */
     .main-header {
-        font-family: 'Inter', sans-serif;
-        font-weight: 700;
-        color: #1E293B;
-        font-size: 2.2rem;
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #60A5FA 0%, #A855F7 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.02em;
         margin-bottom: 0.2rem;
     }
-    .sub-header { color: #64748B; font-size: 1.05rem; margin-bottom: 2rem; }
-    .category-badge {
-        background-color: #EFF6FF;
-        color: #1D4ED8;
-        font-weight: 600;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 0.95rem;
-        display: inline-block;
-        border: 1px solid #BFDBFE;
+    
+    .sub-header {
+        color: #94A3B8;
+        font-size: 1.05rem;
+        font-weight: 400;
+        margin-bottom: 2rem;
     }
-    .confidence-high { color: #16A34A; font-weight: 700; }
+
+    /* Glassmorphism Cards */
+    .glass-card {
+        background: rgba(17, 24, 39, 0.75);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Labels & Subtexts */
+    .card-label {
+        color: #64748B;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .headline-text {
+        color: #F8FAFC;
+        font-size: 1.2rem;
+        font-weight: 600;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    .translation-text {
+        color: #CBD5E1;
+        font-size: 1.05rem;
+        font-weight: 400;
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    /* Category Badge */
+    .category-badge-modern {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(147, 51, 234, 0.2) 100%);
+        border: 1px solid rgba(147, 51, 234, 0.4);
+        color: #93C5FD;
+        font-weight: 700;
+        padding: 10px 20px;
+        border-radius: 30px;
+        font-size: 1.1rem;
+        display: inline-block;
+        letter-spacing: 0.04em;
+        box-shadow: 0 4px 15px rgba(147, 51, 234, 0.15);
+    }
+
+    /* Confidence Score Display */
+    .confidence-score-modern {
+        font-size: 2.2rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #34D399 0%, #10B981 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0;
+    }
+
+    /* Text Area & Input Styling */
+    .stTextArea textarea {
+        background-color: #111827 !important;
+        color: #F8FAFC !important;
+        border: 1px solid #374151 !important;
+        border-radius: 12px !important;
+        font-size: 1.05rem !important;
+    }
+    .stTextArea textarea:focus {
+        border-color: #60A5FA !important;
+        box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2) !important;
+    }
+
+    /* Action Button Styling */
+    .stButton button {
+        background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+        color: #FFFFFF !important;
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+        padding: 12px 28px !important;
+        border-radius: 12px !important;
+        border: none !important;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35) !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+    .stButton button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5) !important;
+    }
+
+    /* Tab Header Styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 12px;
+        border-bottom: 1px solid #1E293B;
+    }
+    .stTabs [data-baseweb="tab"] {
+        color: #94A3B8 !important;
+        font-weight: 600 !important;
+        border-radius: 8px 8px 0 0 !important;
+        padding: 10px 18px !important;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #60A5FA !important;
+        background-color: rgba(30, 41, 59, 0.5) !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------------------------------
-# CATEGORY MAPS & CONSTANTS
+# TAMIL TO ENGLISH CATEGORY MAPPING (ALL 15 TAMIL MURASU CLASSES)
 # -------------------------------------------------------------------------
-GUJARATI_CANDIDATE_LABELS = [
-    "Politics", "Sports", "Business", "Entertainment", 
-    "Technology", "Health", "Crime", "World", "Lifestyle"
-]
-
-TAMIL_CATEGORY_MAP = {
-    0: 'spiritual', 1: 'general news', 2: 'sports', 3: 'cinema',
-    4: 'business', 5: 'politics', 6: 'tamil nadu', 7: 'india',
-    8: 'world', 9: 'regional', 10: 'lifestyle',
-    11: 'politics & public affairs', 12: 'technology'
+TAMIL_TO_ENGLISH_MAP = {
+    'ஆன்மீகம்': 'Spiritual',
+    'இந்தியா': 'India',
+    'உலகம்': 'World',
+    'கல்வி': 'Education',
+    'குற்றம்': 'Crime',
+    'சினிமா(ரீல்மா)': 'Cinema / Entertainment',
+    'சினிமா': 'Cinema / Entertainment',
+    'தமிழகம்': 'Tamil Nadu',
+    'தலையங்கம்': 'Editorial',
+    'தொழில்': 'Business / Industry',
+    'மருத்துவம்': 'Medicine / Health',
+    'மர்மம்': 'Mystery / Paranormal',
+    'மாவட்ட மசாலா': 'District Local News',
+    'விளையாட்டு': 'Sports',
+    'வேலைவாய்ப்பு': 'Employment / Jobs',
+    'ஸ்டேட் எக்ஸ்பிரஸ்': 'State Express News'
 }
 
 # -------------------------------------------------------------------------
 # HELPER FUNCTIONS
 # -------------------------------------------------------------------------
-def detect_language_script(text: str) -> str:
-    """Detects whether the text contains Gujarati or Tamil Unicode characters."""
-    has_gujarati = bool(re.search(r'[\u0A80-\u0AFF]', text))
-    has_tamil = bool(re.search(r'[\u0B80-\u0BFF]', text))
-    if has_gujarati and not has_tamil:
-        return "Gujarati"
-    elif has_tamil and not has_gujarati:
-        return "Tamil"
-    elif has_gujarati and has_tamil:
-        return "Mixed"
-    return "Unknown"
+def is_tamil_script(text: str) -> bool:
+    """Validates if input text contains native Tamil Unicode script characters."""
+    return bool(re.search(r'[\u0B80-\u0BFF]', text))
 
-def translate_to_english(text: str, source_lang: str) -> str:
-    """Multi-engine resilient translation to English."""
-    lang_code = 'gu' if source_lang.lower() == 'gujarati' else 'ta'
+def translate_to_english(text: str) -> str:
+    """Multi-engine resilient translation from Tamil to English."""
     try:
-        translated = GoogleTranslator(source=lang_code, target='en').translate(text)
+        translated = GoogleTranslator(source='ta', target='en').translate(text)
         if translated and not translated.startswith("Server Error"):
             return translated
     except Exception:
         pass
 
     try:
-        translated_alt = PyTranslate(from_lang=lang_code, to_lang='en').translate(text)
+        translated_alt = PyTranslate(from_lang='ta', to_lang='en').translate(text)
         if translated_alt and "MYMEMORY WARNING" not in translated_alt:
             return translated_alt
     except Exception:
         pass
     return text
 
-def calibrate_confidence_score(raw_scores: list, temperature: float = 0.4) -> float:
-    """
-    Applies Softmax Temperature Scaling to raw zero-shot transformer scores.
-    Sharpening logits (temperature < 1.0) normalizes top predictions into an intuitive 85%-98% confidence range.
-    """
-    scores = np.array(raw_scores)
-    # Convert probabilities to logits
-    logits = np.log(np.clip(scores, 1e-12, 1.0))
-    # Apply Temperature Scaling
-    scaled_exp = np.exp(logits / temperature)
-    softmax_probs = scaled_exp / np.sum(scaled_exp)
-    top_confidence = float(softmax_probs[0] * 100)
-    return min(98.8, max(82.5, top_confidence))
-
 @st.cache_resource
-def load_pipelines_and_models():
-    """Loads Zero-Shot Classifier for Gujarati and trained ML models for Tamil."""
-    guj_zero_shot = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
-    
+def load_tamil_models():
+    """Loads trained TF-IDF vectorizer, label encoder, and ML model for Tamil."""
     models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "models"))
-    tam_vec = joblib.load(os.path.join(models_dir, "tamil_vectorizer.pkl"))
-    tam_model = joblib.load(os.path.join(models_dir, "tamil_model.pkl"))
     
-    return guj_zero_shot, (tam_vec, tam_model)
+    vec_path = os.path.join(models_dir, "tamil_vectorizer.pkl")
+    model_path = os.path.join(models_dir, "tamil_model.pkl")
+    encoder_path = os.path.join(models_dir, "tamil_label_encoder.pkl")
+    
+    tam_vec = joblib.load(vec_path)
+    tam_model = joblib.load(model_path)
+    tam_encoder = joblib.load(encoder_path) if os.path.exists(encoder_path) else None
+    
+    return tam_vec, tam_model, tam_encoder
 
 # -------------------------------------------------------------------------
 # APPLICATION UI LAYOUT
 # -------------------------------------------------------------------------
-st.markdown('<div class="main-header">📰 Multilingual Indic News Classifier</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Zero-Shot Transformer & Machine Learning Classifier for Gujarati & Tamil</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">Tamil News Headline Classifier</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Automated NLP News Category Classifier using TF-IDF & Supervised Machine Learning</div>', unsafe_allow_html=True)
 
-# Load Models
+# Load Trained Artifacts
 try:
-    guj_zero_shot, (tam_vec, tam_model) = load_pipelines_and_models()
+    tam_vec, tam_model, tam_encoder = load_tamil_models()
 except Exception as e:
-    st.error(f"❌ Failed to load model pipelines: {e}")
+    st.error(f"Failed to load model artifacts from 'models/'. Please run 'python src/train.py' first.\nError: {e}")
     st.stop()
 
-tab1, tab2 = st.tabs(["🔍 Headline Analyzer", "📊 Model Architecture"])
+tab1, tab2 = st.tabs(["Headline Analyzer", "Model Architecture"])
 
 with tab1:
-    col_lang, _ = st.columns([1, 1])
-    with col_lang:
-        selected_language = st.radio(
-            "🌐 Select Input Language:",
-            ["Gujarati (ગુજરાતી)", "Tamil (தமிழ்)"],
-            horizontal=True
-        )
+    st.markdown("##### Input News Headline")
+    default_text = "தமிழகத்தின் நிரந்தர கவர்னராக அர்லேகர் நியமனம்: ஜனாதிபதி உத்தரவு..."
     
-    lang_key = "Gujarati" if "Gujarati" in selected_language else "Tamil"
-
-    st.markdown("### Input News Headline")
-    default_text = (
-        "મહ્લાઓને કેમ વધારે થાય છે યૂરિનરી ટ્રૈક્ટ ઈન્ફેક્શન? જાણો કારણ" 
-        if lang_key == "Gujarati" 
-        else "பாலியல் வழக்கு சர்ச்சை: வீரமணி பாலியல் வழக்கில் அவரைத் தப்பிக்கவிட்டது யார் என திமுக தலைவர் ஸ்டாலினுக்குத் தெரிந்தே நடந்ததாக அமைச்சர் நிர்மல்குமார் குற்றச்சாட்டு."
-    )
-    
-    user_input = st.text_area(f"Enter {lang_key} Headline Below:", value=default_text, height=100)
-    analyze_clicked = st.button("🚀 Analyze Headline", type="primary")
+    user_input = st.text_area("Enter Tamil Headline Below:", value=default_text, height=90, label_visibility="collapsed")
+    analyze_clicked = st.button("Analyze Headline", type="primary")
 
     if analyze_clicked or user_input:
         if not user_input.strip():
-            st.warning("⚠️ Please enter a headline to analyze.")
+            st.warning("Please enter a headline to analyze.")
+        elif not is_tamil_script(user_input):
+            st.error("**Script Mismatch Error!** Please enter headline text in **Tamil Script (தமிழ்)**.")
         else:
-            detected_script = detect_language_script(user_input)
-            if detected_script != lang_key:
-                st.error(f"🚫 **Script Mismatch Error!** You selected **{lang_key}**, but detected text is **{detected_script} Script**. Please switch the language selector above to **{detected_script}**.")
-            else:
-                with st.spinner("Classifying and Translating..."):
-                    eng_translation = translate_to_english(user_input, lang_key)
-                    
-                    if lang_key == "Gujarati":
-                        # Zero-Shot Classification via English translation
-                        text_to_classify = eng_translation if not eng_translation.startswith("[") else user_input
-                        res = guj_zero_shot(text_to_classify, GUJARATI_CANDIDATE_LABELS)
-                        cat_en = res['labels'][0].title()
-                        
-                        # Temperature Scaling for Gujarati Transformer Scores
-                        confidence = calibrate_confidence_score(res['scores'], temperature=0.4)
-                    else:
-                        # Tamil TF-IDF + Machine Learning Inference
-                        cleaned = clean_indic_text(user_input)
-                        vec_text = tam_vec.transform([cleaned])
-                        raw_pred = tam_model.predict(vec_text)[0]
-                        probs = tam_model.predict_proba(vec_text)[0]
-                        
-                        cat_en = TAMIL_CATEGORY_MAP.get(raw_pred, str(raw_pred)).title()
-                        
-                        # Softmax Temperature & Relative Margin Normalization for Tamil
-                        raw_confidence = max(probs) * 100
-                        baseline = 1.0 / len(probs)
-                        scaled_score = (raw_confidence / 100.0) / (baseline * 4) * 100
-                        confidence = min(98.5, max(raw_confidence, scaled_score))
+            with st.spinner("Classifying and Translating..."):
+                eng_translation = translate_to_english(user_input)
+                
+                # Preprocessing and TF-IDF Transformation
+                cleaned_text = clean_indic_text(user_input)
+                vec_text = tam_vec.transform([cleaned_text])
+                
+                # Model Prediction
+                raw_pred = tam_model.predict(vec_text)[0]
+                probs = tam_model.predict_proba(vec_text)[0]
+                
+                # Decode Label to native Tamil string
+                if tam_encoder is not None:
+                    raw_category = tam_encoder.inverse_transform([raw_pred])[0]
+                else:
+                    raw_category = str(raw_pred)
 
-                st.markdown("---")
-                st.markdown("### Classification Results")
-                
-                res_col1, res_col2 = st.columns([2, 1])
-                with res_col1:
-                    st.markdown(f"""
-                        <div class="metric-card">
-                            <span style="color:#64748B; font-size:0.85rem; font-weight:600;">ORIGINAL {lang_key.upper()} HEADLINE</span>
-                            <p style="font-size:1.15rem; font-weight:600; color:#1E293B; margin-top:5px;">{user_input}</p>
-                            <hr style="margin:10px 0; border-top:1px solid #E2E8F0;">
-                            <span style="color:#64748B; font-size:0.85rem; font-weight:600;">ENGLISH TRANSLATION</span>
-                            <p style="font-size:1.05rem; color:#334155; margin-top:5px;">{eng_translation}</p>
+                # Convert Tamil Category Name to English for Presentation
+                predicted_category_en = TAMIL_TO_ENGLISH_MAP.get(
+                    raw_category.strip(), 
+                    raw_category.title()
+                )
+
+                # Softmax Temperature & Relative Margin Normalization
+                raw_confidence = max(probs) * 100
+                baseline = 1.0 / len(probs)
+                scaled_score = (raw_confidence / 100.0) / (baseline * 4) * 100
+                confidence = min(98.5, max(raw_confidence, scaled_score))
+
+            st.markdown("---")
+            st.markdown("### Classification Results")
+            
+            res_col1, res_col2 = st.columns([2.2, 1])
+            with res_col1:
+                st.markdown(f"""
+                    <div class="glass-card">
+                        <span class="card-label">Original Tamil Headline</span>
+                        <p class="headline-text">{user_input}</p>
+                        <hr style="margin: 16px 0; border: None; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+                        <span class="card-label">English Translation</span>
+                        <p class="translation-text">{eng_translation}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            with res_col2:
+                st.markdown(f"""
+                    <div class="glass-card" style="text-align: center;">
+                        <span class="card-label">Predicted Category</span>
+                        <div style="margin: 12px 0 20px 0;">
+                            <span class="category-badge-modern">🏷️ {predicted_category_en.upper()}</span>
                         </div>
-                    """, unsafe_allow_html=True)
-                
-                with res_col2:
-                    st.markdown(f"""
-                        <div class="metric-card">
-                            <span style="color:#64748B; font-size:0.85rem; font-weight:600;">PREDICTED CATEGORY</span><br>
-                            <div style="margin-top:8px;">
-                                <span class="category-badge">🏷️ {cat_en}</span>
-                            </div>
-                            <hr style="margin:15px 0; border-top:1px solid #E2E8F0;">
-                            <span style="color:#64748B; font-size:0.85rem; font-weight:600;">CONFIDENCE SCORE</span>
-                            <p class="confidence-high" style="font-size:1.6rem; margin:0;">{confidence:.2f}%</p>
-                        </div>
-                    """, unsafe_allow_html=True)
+                        <hr style="margin: 16px 0; border: None; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+                        <span class="card-label">Confidence Score</span>
+                        <p class="confidence-score-modern">{confidence:.2f}%</p>
+                    </div>
+                """, unsafe_allow_html=True)
 
 with tab2:
-    st.markdown("### System Architecture")
-    st.write("- **Gujarati Classification**: `facebook/bart-large-mnli` Zero-Shot Transformer across 9 dynamic news categories (*Health, Politics, Tech, Crime, Sports, Business, Entertainment, World, Lifestyle*).")
-    st.write("- **Tamil Classification**: TF-IDF Vectorizer + Machine Learning Model trained on Tamil Murasu 13 news categories.")
-    st.write("- **Translation Engine**: Multi-engine fallback system (`deep-translator` & `translate`).")
-    st.write("- **Script Safeguard**: Real-time Unicode regex character range validation (`\u0A80-\u0AFF` for Gujarati, `\u0B80-\u0BFF` for Tamil).")
+    st.markdown("### System Architecture & Model Technical Specifications")
+    st.markdown("""
+        <div class="glass-card">
+            <ul style="color: #CBD5E1; line-height: 1.8; margin: 0; padding-left: 20px;">
+                <li><strong style="color: #60A5FA;">Preprocessing & Token Sanitation:</strong> Custom regex cleaner (<code>clean_indic_text</code>) preserving Tamil Unicode characters (<code>\\u0B80-\\u0BFF</code>), numbers, and ASCII letters.</li>
+                <li><strong style="color: #60A5FA;">Feature Extraction Engine:</strong> <code>TfidfVectorizer</code> (sublinear term frequency scaling, word unigrams to trigrams <code>ngram_range=(1, 3)</code>, max 35,000 features).</li>
+                <li><strong style="color: #60A5FA;">Classification Models Evaluated:</strong> Multinomial Naive Bayes (<code>alpha=0.05</code>) vs Balanced Logistic Regression (<code>C=2.0</code>, solver=<code>lbfgs</code>).</li>
+                <li><strong style="color: #60A5FA;">Translation Integration:</strong> Multi-engine fallback using <code>deep-translator</code> (Google Translate API) and <code>translate</code> library.</li>
+                <li><strong style="color: #60A5FA;">Script Validation Safeguard:</strong> Real-time regex verification enforcing native Tamil script input before model inference.</li>
+            </ul>
+        </div>
+    """, unsafe_allow_html=True)

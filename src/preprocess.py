@@ -1,22 +1,27 @@
+import os
 import re
 import pandas as pd
 
 def clean_indic_text(text: str) -> str:
     """
-    Cleans Indic news text by keeping native Gujarati and Tamil Unicode scripts.
+    Cleans Tamil news text by stripping URLs, emails, HTML tags,
+    and special characters while preserving Tamil Unicode script (\u0B80-\u0BFF),
+    English letters, and numbers.
     """
     if not isinstance(text, str):
         return ""
     
-    # Remove URLs and emails
+    # 1. Remove URLs and emails
     text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
     text = re.sub(r'\S+@\S+', '', text)
     
-    # Keep Unicode ranges for Gujarati (0A80-0AFF) and Tamil (0B80-0BFF)
-    pattern = r'[^\s\u0A80-\u0AFF\u0B80-\u0BFF]'
-    text = re.sub(pattern, '', text)
+    # 2. Remove HTML tags
+    text = re.sub(r'<.*?>', '', text)
     
-    # Collapse extra spaces
+    # 3. Strip special punctuation symbols
+    text = re.sub(r'[!@#$%^&*()_+\-=\[\]{};:\'",.<>/?\\|`~]', ' ', text)
+    
+    # 4. Collapse extra whitespaces
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
@@ -34,7 +39,7 @@ def preprocess_dataframe(df: pd.DataFrame, text_col: str, label_col: str) -> pd.
     # Enforce standard column names immediately
     df_temp = pd.DataFrame()
     df_temp['text'] = df[actual_text].astype(str)
-    df_temp['category'] = df[actual_label].astype(str)
+    df_temp['category'] = df[actual_label].astype(str).str.strip()
 
     # Drop empty/missing rows
     df_temp = df_temp.dropna(subset=['text', 'category']).copy()
@@ -47,5 +52,48 @@ def preprocess_dataframe(df: pd.DataFrame, text_col: str, label_col: str) -> pd.
 
     return df_temp[['text', 'clean_text', 'category']].reset_index(drop=True)
 
+def preprocess_and_save():
+    """
+    Executes automated preprocessing for the Tamil news dataset
+    and exports clean artifacts to data/processed/tamil_clean.csv.
+    """
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    tam_dir = os.path.join(project_root, "data", "tamil")
+    processed_dir = os.path.join(project_root, "data", "processed")
+
+    os.makedirs(processed_dir, exist_ok=True)
+    tam_file = os.path.join(tam_dir, "tamilmurasu_dataset.csv")
+
+    print("==================================================")
+    print(" PREPROCESSING TAMIL NEWS DATASET ")
+    print("==================================================")
+
+    if not os.path.exists(tam_file):
+        print(f"Error: 'tamilmurasu_dataset.csv' not found at '{tam_file}'.")
+        print("Please run 'python src/download_data.py' first.")
+        return
+
+    # Load raw dataset
+    df_tam_raw = pd.read_csv(tam_file)
+
+    # Apply core cleaning
+    df_tam_clean = preprocess_dataframe(df_tam_raw, text_col='news_article', label_col='news_category')
+    df_tam_clean = df_tam_clean.drop_duplicates(subset=['clean_text']).reset_index(drop=True)
+
+    # Stratified Downsampling (Max 500 rows per category) using list comprehension to avoid pandas warnings
+    df_tam_balanced = pd.concat([
+        group.sample(min(len(group), 500), random_state=42)
+        for _, group in df_tam_clean.groupby('category')
+    ], ignore_index=True)
+
+    tam_out = os.path.join(processed_dir, "tamil_clean.csv")
+    df_tam_balanced[['text', 'clean_text', 'category']].to_csv(tam_out, index=False)
+
+    print("Tamil Preprocessing Complete!")
+    print(f"   Clean Rows Saved : {len(df_tam_balanced)}")
+    print(f"   Total Categories : {df_tam_balanced['category'].nunique()}")
+    print(f"   Saved Path       : '{tam_out}'")
+    print("==================================================")
+
 if __name__ == "__main__":
-    print("Preprocessing module verified.")
+    preprocess_and_save()

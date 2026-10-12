@@ -2,39 +2,46 @@ import os
 import glob
 import pandas as pd
 
-# 1. Set Kaggle Credentials
+# Set Kaggle Credentials (if using Kaggle API directly)
 os.environ['KAGGLE_USERNAME'] = "hussainm303"
 os.environ['KAGGLE_KEY'] = "KGAT_f2c8c9b392cd48f7dac49e37d502f1a7"
 
-from kaggle.api.kaggle_api_extended import KaggleApi
-
-def fetch_kaggle_datasets():
+def fetch_tamil_dataset():
     """
-    Downloads raw datasets for Gujarati and Tamil directly from Kaggle API.
+    Downloads the Tamil Murasu news dataset directly from Kaggle API
+    and saves it to data/tamil/.
     """
-    api = KaggleApi()
-    api.authenticate()
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    tam_dir = os.path.join(project_root, "data", "tamil")
+    os.makedirs(tam_dir, exist_ok=True)
 
-    datasets = {
-        "gujarati": {
-            "id": "disisbig/gujarati-news-dataset",
-            "dir": "data/gujarati"
-        },
-        "tamil": {
-            "id": "vijayabhaskar96/tamil-news-classification-dataset-tamilmurasu",
-            "dir": "data/tamil"
-        }
-    }
+    dataset_id = "vijayabhaskar96/tamil-news-classification-dataset-tamilmurasu"
+    
+    print("==================================================")
+    print(" DOWNLOADING TAMIL NEWS DATASET FROM KAGGLE ")
+    print("==================================================")
 
-    for lang, info in datasets.items():
-        print(f"📥 Downloading {lang.capitalize()} dataset: {info['id']}...")
-        os.makedirs(info['dir'], exist_ok=True)
-        api.dataset_download_files(info['id'], path=info['dir'], unzip=True)
-        print(f"✅ Successfully downloaded to '{info['dir']}'\n")
+    target_file = os.path.join(tam_dir, "tamilmurasu_dataset.csv")
+
+    if os.path.exists(target_file):
+        print(f"Tamil Dataset already exists at: '{target_file}'")
+    else:
+        try:
+            from kaggle.api.kaggle_api_extended import KaggleApi
+            api = KaggleApi()
+            api.authenticate()
+            
+            print(f"Downloading: {dataset_id}...")
+            api.dataset_download_files(dataset_id, path=tam_dir, unzip=True)
+            print(f"Successfully downloaded dataset to '{tam_dir}'\n")
+
+        except Exception as e:
+            print(f"Kaggle API Download Error: {e}")
+            print(f"Manual Setup: Ensure 'tamilmurasu_dataset.csv' is placed inside:\n   {tam_dir}")
 
     print("==================================================")
-    print("✅ Kaggle Data Download Complete!")
+    print("Tamil Data Download Complete!")
     print("==================================================")
 
 if __name__ == "__main__":
-    fetch_kaggle_datasets()
+    fetch_tamil_dataset()
